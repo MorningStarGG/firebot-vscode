@@ -1,0 +1,127 @@
+{
+    "name": "firebot-vscode-variable-helper",
+    "displayName": "Firebot VSCode Variable Helper",
+    "description": "Integrates Firebot variables into VSCode",
+    "version": "1.0.0",
+    "publisher": "MorningStarGG",
+    "homepage": "https://twitch.tv/MorningStarGG",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/MorningStarGG/firebot-vscode-variable-helper"
+    },
+    "icon": "firebot.png",
+    "galleryBanner": {
+        "color": "#111111",
+        "theme": "dark"
+    },
+    "engines": {
+        "vscode": "^1.60.0",
+        "node": ">=16.0.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Snippets",
+        "Linters"
+    ],
+    "activationEvents": [
+        "onLanguage:html",
+        "onLanguage:css",
+        "onLanguage:javascript"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "firebot-vscode-variable-helper.validateFile",
+                "title": "Validate Firebot Variables",
+                "category": "Firebot"
+            },
+            {
+                "command": "firebot-vscode-variable-helper.insertVariable",
+                "title": "Insert Firebot Variable",
+                "category": "Firebot"
+            }
+        ],
+        "configuration": {
+            "title": "Firebot VSCode Variable Helper",
+            "properties": {
+                "firebotHelper.validateDeprecated": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show warnings for deprecated Firebot variables"
+                },
+                "firebotHelper.validateNesting": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate nested variable structures"
+                },
+                "firebotHelper.validateFilePaths": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate file paths in variables"
+                }
+            }
+        }
+    },
+    "languages": [
+        {
+            "id": "firebot-variables",
+            "aliases": [
+                "Firebot Variables"
+            ],
+            "extensions": [
+                ".fb",
+                ".firebot"
+            ],
+            "configuration": "./language-configuration.json"
+        }
+    ],
+    "grammars": [
+        {
+            "language": "firebot-variables",
+            "scopeName": "source.firebot",
+            "path": "./syntaxes/firebot.tmLanguage.json"
+        }
+    ],
+    "configurationDefaults": {
+        "[html]": {
+            "editor.suggest.showVariables": true
+        },
+        "[css]": {
+            "editor.suggest.showVariables": true
+        },
+        "[javascript]": {
+            "editor.suggest.showVariables": true
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js",
+        "package": "@vscode/vsce package",
+        "clean": "rimraf dist out node_modules"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.4",
+        "@types/vscode": "^1.60.0",
+        "@typescript-eslint/eslint-plugin": "^6.13.2",
+        "@typescript-eslint/parser": "^6.13.2",
+        "@vscode/vsce": "^3.2.1",
+        "eslint": "^8.55.0",
+        "rimraf": "^5.0.5",
+        "typescript": "^5.3.3"
+    },
+    "overrides": {
+        "glob": "^10.3.10",
+        "@humanwhocodes/config-array": "@eslint/config-array@^0.1.0",
+        "@humanwhocodes/object-schema": "@eslint/object-schema@^0.1.0"
+    },
+    "resolutions": {
+        "glob": "^10.3.10",
+        "@humanwhocodes/config-array": "@eslint/config-array@^0.1.0",
+        "@humanwhocodes/object-schema": "@eslint/object-schema@^0.1.0"
+    }
+}

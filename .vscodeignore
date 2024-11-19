@@ -1,0 +1,60 @@
+# Source files
+src/**
+out/**/*.map
+.gitignore
+tsconfig.json
+webpack.config.js
+tslint.json
+.eslintrc.json
+.prettierrc
+
+# Development folders
+.vscode/**
+.vscode-test/**
+node_modules/**
+test/**
+
+# Build outputs we don't need
+out/test/**
+out/**/*.map
+
+# Source control
+.git/**
+.github/**
+.gitignore
+.gitattributes
+
+# Configs and docs
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/tslint.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+
+# Keep
+!out/extension.js
+!out/**/*.js
+!dist/**/*.js
+!src/**/*.d.ts
+
+# Ignore workspace files
+*.code-workspace
+.history
+
+# Misc development files
+.npmrc
+.nvmrc
+.editorconfig
+.prettierignore
+.travis.yml
+appveyor.yml
+npm-debug.log
+yarn.lock
+yarn-error.log
+
+# Documentation and examples that aren't needed in the final package
+docs/**
+examples/**
+images/**
+media/**
