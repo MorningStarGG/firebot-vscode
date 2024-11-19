@@ -7,7 +7,7 @@ This Visual Studio Code extension enhances development workflows by providing co
 
 ### 1. Auto-completions
 - **Trigger characters:** `$`, `[`, `(`, `{`, `:`, `;`, and space.
-- **Supported file types:** HTML, CSS, JavaScript, and custom `firebot-variables`.
+- **Supported file types:** HTML, CSS, and JavaScript.
 
 ### 2. Diagnostic Tools
 - Real-time validation for Firebot variable usage.
@@ -19,8 +19,8 @@ This Visual Studio Code extension enhances development workflows by providing co
   - Invalid file paths or CSS context issues.
 
 ### 3. Quick Fixes and Commands
-- **Validate File:** Run `firebot-helper.validateFile` to validate the current file.
-- **Insert Variable:** Use `firebot-helper.insertVariable` to quickly insert a Firebot variable with a snippet.
+- **Validate File:** Run `firebot-vscode-variable-helper.validateFile` to validate the current file.
+- **Insert Variable:** Use `firebot-vscode-variable-helper.insertVariable` to quickly insert a Firebot variable with a snippet.
 
 ### 4. Language Configuration
 - Enhanced word pattern recognition for Firebot variables.
@@ -86,5 +86,5 @@ This Visual Studio Code extension enhances development workflows by providing co
 Special thanks to the Firebot community for their support and contributions.
 
 ---
-
+**AI Disclaimer:** Parts of this was made with vaious AI tools.
 **Note:** This extension assumes familiarity with Firebot and its variable syntax. For more details, refer to the (outdated) [Firebot Variable Documentation](https://github.com/crowbartools/Firebot/wiki/Chat-Effect-Variables).
