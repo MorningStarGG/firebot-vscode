@@ -1,4 +1,5 @@
 import { FIREBOT_VARIABLES } from '../variables';
+
 interface ValidationResult {
     isValid: boolean;
     message?: string;
@@ -17,114 +18,181 @@ interface ValidationContext {
 export class VariableValidator {
     private static readonly MATH_OPERATORS = /[+\-*/%]/;
 
-    private static readonly FILE_PATH_VARIABLES = [
-        '$readFile',
-        '$fileExists',
-        '$filesInDirectory'
+    // Variables that commonly use math operators without needing $math[]
+    private static readonly MATH_EXEMPT_VARIABLES = [
+        '$discordTimestamp',
+        '$time',
+        '$date',
+        '$arrayLength',
+        '$textLength',
+        '$randomNumber',
+        '$ensureNumber'
     ];
 
-    private static readonly REGEX_VARIABLES = [
-        '$replace',
-        '$regexTest',
-        '$regexExec',
-        '$regexMatches'
-    ];
-
-    private static readonly NESTED_MATH_OPS = ['+', '-', '*', '/', '%'];
-
-    /**
-     * Validates deeply nested variable structures
-     */
     static validateNestedStructure(text: string, _context: ValidationContext = {}): ValidationResult[] {
         const results: ValidationResult[] = [];
-        const stack: { variable: string, start: number, requiresDefault: boolean }[] = [];
-        let currentVar = '';
-        let inVariable = false;
         let bracketDepth = 0;
+        let currentNestLevel: { content: string, start: number, variable: string | null }[] = [{
+            content: '',
+            start: 0,
+            variable: null
+        }];
 
         for (let i = 0; i < text.length; i++) {
             const char = text[i];
 
+            // Check for variable start
             if (char === '$') {
-                inVariable = true;
-                currentVar = '$';
-            } else if (inVariable) {
-                if (char === '[') {
-                    if (currentVar.length > 1) {
-                        // Check if current variable exists
-                        const varInfo = FIREBOT_VARIABLES[currentVar];
-                        if (varInfo) {
-                            stack.push({
-                                variable: currentVar,
-                                start: i,
-                                requiresDefault: varInfo.requiresDefault || false
+                let varName = '$';
+                let j = i + 1;
+                // Get the full variable name
+                while (j < text.length && /[a-zA-Z]/.test(text[j])) {
+                    varName += text[j];
+                    j++;
+                }
+                // Store the variable name at current nesting level
+                if (j < text.length && text[j] === '[') {
+                    currentNestLevel[currentNestLevel.length - 1].variable = varName;
+                    // Check entire content for $math specifically
+                    if (varName === '$math') {
+                        // Look ahead to find the content
+                        let mathContent = '';
+                        let k = j + 1;
+                        let mathBracketDepth = 1;
+                        while (k < text.length && mathBracketDepth > 0) {
+                            if (text[k] === '[') mathBracketDepth++;
+                            if (text[k] === ']') mathBracketDepth--;
+                            if (mathBracketDepth > 0) mathContent += text[k];
+                            k++;
+                        }
+                        console.log('Found math content:', mathContent); // Debug log
+
+                        // Check if it's a time format
+                        const unquotedContent = mathContent.replace(/["']/g, '').trim();
+                        console.log('Unquoted:', unquotedContent); // Debug log
+
+                        if (unquotedContent === 'HH:mm:ss' || /^[Hhms:\s]+$/.test(unquotedContent)) {
+                            results.push({
+                                isValid: false,
+                                message: 'Time format string should not be wrapped in $math[]',
+                                severity: 'error',
+                                offset: j + 1,
+                                length: mathContent.length
+                            });
+                        } else if (/^[a-zA-Z]+$/.test(unquotedContent)) {
+                            // Add check for pure text content
+                            results.push({
+                                isValid: false,
+                                message: 'Content in $math[] must be a mathematical expression, not text',
+                                severity: 'error',
+                                offset: j + 1,
+                                length: mathContent.length
                             });
                         }
-
-                        // Special validations based on variable type
-                        if (this.FILE_PATH_VARIABLES.includes(currentVar)) {
-                            const filePathResult = this.validateFilePath(text.substring(i + 1));
-                            if (!filePathResult.isValid) {
-                                results.push({
-                                    ...filePathResult,
-                                    offset: i + 1
-                                });
-                            }
-                        }
-
-                        if (this.REGEX_VARIABLES.includes(currentVar)) {
-                            const regexResult = this.validateRegexPattern(text.substring(i + 1));
-                            if (!regexResult.isValid) {
-                                results.push({
-                                    ...regexResult,
-                                    offset: i + 1
-                                });
-                            }
-                        }
                     }
-                    bracketDepth++;
-                } else if (char === ']') {
-                    bracketDepth--;
-                    if (bracketDepth < 0) {
-                        results.push({
-                            isValid: false,
-                            message: 'Unmatched closing bracket',
-                            severity: 'error',
-                            offset: i,
-                            length: 1
-                        });
-                    }
-                    if (stack.length > 0) {
-                        const lastVar = stack.pop();
-                        if (lastVar?.requiresDefault) {
-                            const content = text.substring(lastVar.start, i);
-                            if (!content.includes(',')) {
-                                results.push({
-                                    isValid: false,
-                                    message: `${lastVar.variable} requires a default value`,
-                                    severity: 'warning',
-                                    offset: lastVar.start,
-                                    length: i - lastVar.start
-                                });
-                            }
-                        }
-                    }
-                } else if (char === ',' || char === ' ') {
-                    inVariable = false;
-                    currentVar = '';
-                } else {
-                    currentVar += char;
                 }
             }
 
-            // Check for math operations in nesting
-            if (inVariable && this.NESTED_MATH_OPS.includes(char)) {
-                const mathResult = this.validateMathOperation(text.substring(i));
-                if (!mathResult.isValid) {
+            if (char === '[') {
+                bracketDepth++;
+                currentNestLevel.push({
+                    content: '',
+                    start: i + 1,
+                    variable: null
+                });
+            } else if (char === ']') {
+                bracketDepth--;
+                const currentLevel = currentNestLevel.pop();
+
+                if (!currentLevel) continue;
+
+                // Check if this was a $math content
+                if (currentLevel.variable === '$math') {
+                    // Remove quotes and trim
+                    const unquotedContent = currentLevel.content.replace(/["']/g, '').trim();
+
+                    // Check if it's a time format
+                    if (unquotedContent === 'HH:mm:ss' || /^[Hhms:\s]+$/.test(unquotedContent)) {
+                        results.push({
+                            isValid: false,
+                            message: 'Time format string should not be wrapped in $math[]',
+                            severity: 'error',
+                            offset: currentLevel.start,
+                            length: currentLevel.content.length
+                        });
+                        continue;
+                    }
+
+                    // Check for actual math operations
+                    try {
+                        // Remove variables for validation
+                        const sanitizedContent = unquotedContent.replace(/\$[a-zA-Z]+\[[^\]]*\]/g, '0');
+
+                        // Check if there are any actual math operators
+                        if (!/[+\-*/%]/.test(sanitizedContent)) {
+                            // Check if it contains any letters after sanitization
+                            if (/[a-zA-Z]/.test(sanitizedContent.trim())) {
+                                results.push({
+                                    isValid: false,
+                                    message: 'Invalid content in $math[], contains non-mathematical characters',
+                                    severity: 'error',
+                                    offset: currentLevel.start,
+                                    length: String(currentLevel.content).length
+                                });
+                                continue;
+                            }
+
+                            // Check if it's just a number
+                            if (!isNaN(Number(sanitizedContent.trim()))) {
+                                results.push({
+                                    isValid: false,
+                                    message: 'No mathematical operations found in $math[]',
+                                    severity: 'warning',
+                                    offset: currentLevel.start,
+                                    length: String(currentLevel.content).length
+                                });
+                                continue;
+                            }
+
+                            // If we get here, it's neither a number nor contains letters, but also has no operators
+                            results.push({
+                                isValid: false,
+                                message: 'Invalid mathematical expression',
+                                severity: 'error',
+                                offset: currentLevel.start,
+                                length: String(currentLevel.content).length
+                            });
+                            continue;
+                        }
+
+                        // If we found math operators, validate the expression
+                        const mathExp = sanitizedContent.replace(/[^0-9+\-*/%\s.()]/g, '');
+                        if (mathExp.trim()) {
+                            Function(`"use strict";return (${mathExp})`)();
+                        }
+                    } catch (e) {
+                        results.push({
+                            isValid: false,
+                            message: 'Invalid mathematical expression',
+                            severity: 'error',
+                            offset: currentLevel.start,
+                            length: String(currentLevel.content).length
+                        });
+                    }
+                }
+
+                if (bracketDepth < 0) {
                     results.push({
-                        ...mathResult,
-                        offset: i
+                        isValid: false,
+                        message: 'Unmatched closing bracket',
+                        severity: 'error',
+                        offset: i,
+                        length: 1
                     });
+                }
+            } else {
+                if (currentNestLevel.length > 0) {
+                    currentNestLevel[currentNestLevel.length - 1].content += char;
                 }
             }
         }
@@ -132,7 +200,19 @@ export class VariableValidator {
         return results;
     }
 
+    private static findOutermostVariable(nestLevels: string[]): string | null {
+        for (let i = nestLevels.length - 1; i >= 0; i--) {
+            const varMatch = nestLevels[i].match(/\$[a-zA-Z]+/);
+            if (varMatch) {
+                return varMatch[0];
+            }
+        }
+        return null;
+    }
 
+    static validate(text: string, context: ValidationContext = {}): ValidationResult[] {
+        return this.validateNestedStructure(text, context);
+    }
 
     /**
      * Validates file paths, including those with variables
@@ -170,7 +250,7 @@ export class VariableValidator {
     private static validateRegexPattern(pattern: string): ValidationResult {
         try {
             // Test if it's a valid regex pattern
-            // Handle special cases with look-aheads
+            // Handle special cases like your examples with look-aheads
             const cleanPattern = pattern.replace(/\\/g, '\\\\');
             new RegExp(cleanPattern);
 
@@ -191,38 +271,6 @@ export class VariableValidator {
                 severity: 'error'
             };
         }
-    }
-
-    /**
-     * Validates math operations in nested variables
-     */
-    private static validateMathOperation(text: string): ValidationResult {
-        // Skip validation if this is a timestamp format
-        if (text.includes('$discordTimestamp') || text.includes('$time')) {
-            return { isValid: true, severity: 'info' };
-        }
-
-        // Only validate if we find math operators outside of $math
-        if (this.MATH_OPERATORS.test(text) && !text.includes('$math[')) {
-            const containingVariable = this.findContainingVariable(text);
-            // Don't validate math operators inside certain variables that commonly use them
-            if (containingVariable && ['$discordTimestamp', '$time', '$date'].includes(containingVariable)) {
-                return { isValid: true, severity: 'info' };
-            }
-
-            return {
-                isValid: false,
-                message: 'Mathematical operations should be wrapped in $math[]',
-                severity: 'warning'
-            };
-        }
-
-        return { isValid: true, severity: 'info' };
-    }
-
-    private static findContainingVariable(text: string): string | null {
-        const variableMatch = text.match(/\$[a-zA-Z]+/);
-        return variableMatch ? variableMatch[0] : null;
     }
 
     /**

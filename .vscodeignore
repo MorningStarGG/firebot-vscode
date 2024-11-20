@@ -52,6 +52,8 @@ appveyor.yml
 npm-debug.log
 yarn.lock
 yarn-error.log
+*.py
+VariableList.txt
 
 # Documentation and examples that aren't needed in the final package
 docs/**
