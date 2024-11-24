@@ -1654,6 +1654,17 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
         description: 'Get bytebin id for streamer profile. Access the json by going to https://bytebin.lucko.me/ID-HERE.',
         category: VariableCategory.Other
     },
+    $presetListArg: {
+        name: '$presetListArg',
+        description: 'Represents the given argument passed to this preset effect list.',
+        category: VariableCategory.Command,
+        examples: [
+            {
+                example: '$presetListArg[name]',
+                description: 'Get the argument with the name "name" passed to this preset list effect'
+            }
+        ]
+    },
     '$pronouns': {
         name: '$pronouns',
         description: 'Returns the pronouns of the given user. It uses https://pronouns.alejo.io/ to get the pronouns.',
