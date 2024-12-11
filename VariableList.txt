@@ -875,6 +875,9 @@ Adds an ordinal indicator suffix to a number (ie 'st', 'nd', 'rd')
 $padNumber[value, places] 
 Pads the given number up to the specified number of decimal places.
 
+$presetListArg[name] 
+Represents the given argument passed to this preset effect list.
+
 $profilePageBytebinToken 
 Get bytebin id for streamer profile. Access the json by going to https://bytebin.lucko.me/ID-HERE.
 
