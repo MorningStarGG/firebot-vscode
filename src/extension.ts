@@ -72,26 +72,17 @@ export function activate(context: vscode.ExtensionContext) {
                 const varName = selected.label;
                 const varInfo = FIREBOT_VARIABLES[varName];
                 let snippetString: vscode.SnippetString;
-
+                console.log(varName)
                 // Escape the dollar sign in the variable name
                 const escapedVarName = varName.replace(/\$/g, '\\$');
 
                 // Check if variable accepts optional arguments
                 if (varInfo.acceptsOptionalArguments) {
-                    snippetString = new vscode.SnippetString(`${escapedVarName}\${1:[$2]}\$0`);
-                }
-                // Check if it's a non-bracket variable
-                else if (FirebotCompletionProvider.NON_BRACKET_VARS.includes(varName)) {
-                    snippetString = new vscode.SnippetString(escapedVarName);
+                     snippetString = new vscode.SnippetString(`${escapedVarName}\${1:[$2]}\$0`);
                 }
                 // Check if it requires default value
                 else if (varInfo.requiresDefault) {
                     snippetString = new vscode.SnippetString(`${escapedVarName}[\${1:value}, \${2:default}]`);
-                }
-                // Standard bracket variable
-                else if (FirebotCompletionProvider.REQUIRES_BRACKETS.includes(varName) ||
-                    varInfo.examples?.some(ex => ex.example.includes('['))) {
-                    snippetString = new vscode.SnippetString(`${escapedVarName}[\${1:value}]`);
                 }
                 // Fallback case - no brackets
                 else {

@@ -19,11 +19,11 @@ export class FirebotDiagnosticProvider {
 
         // Create custom CSS validation settings
         const config = vscode.workspace.getConfiguration('css');
-        config.update('validate', false, vscode.ConfigurationTarget.Global); // Disable CSS validation globally
+        config.update('validate', true, vscode.ConfigurationTarget.Global); // Disable CSS validation globally
 
         // Specifically for style tags in HTML
         const htmlConfig = vscode.workspace.getConfiguration('html');
-        htmlConfig.update('validate.styles', false, vscode.ConfigurationTarget.Global);
+        htmlConfig.update('validate.styles', true, vscode.ConfigurationTarget.Global);
     }
 
     public updateDiagnostics(document: vscode.TextDocument): void {
@@ -34,7 +34,7 @@ export class FirebotDiagnosticProvider {
 
         const text = document.getText();
         const diagnostics: vscode.Diagnostic[] = [];
-
+        let validationResults = []
         // Only process our custom diagnostics
         if (this.shouldProcessFile(document)) {
             // Get all variable usages
@@ -42,7 +42,7 @@ export class FirebotDiagnosticProvider {
             let match: RegExpExecArray | null;
 
             while ((match = variablePattern.exec(text)) !== null) {
-                const validationResults = VariableValidator.validateNestedStructure(match[0], {
+                 validationResults = VariableValidator.validateNestedStructure(match[0], {
                     filePath: match[0].includes('$readFile') || match[0].includes('$fileExists'),
                     regex: match[0].includes('$replace') || match[0].includes('$regexTest'),
                     html: document.languageId === 'html',

@@ -59,6 +59,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Validate file paths in variables"
+                },
+                "firebotHelper.variableData": {
+                    "type": "object",
+                    "default": {},
+                    "description": "All variables loaded from firebot(firebot must be loaded and running before this plugin to get the initial data)"
                 }
             }
         }

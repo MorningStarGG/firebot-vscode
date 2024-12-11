@@ -1,3 +1,7 @@
+import * as vscode from 'vscode';
+import { writeFile } from 'fs';
+import { Buffer } from 'buffer';
+import { ConfigurationTarget, workspace } from 'vscode';
 export interface VariableExample {
     example: string;
     description: string;
@@ -20,7 +24,7 @@ export interface VariableDefinition {
 export enum VariableCategory {
     CustomVariable = 'Custom Variable',
     EffectOutput = 'Effect Output',
-    User = 'User',
+    User = 'User Based',
     Channel = 'Channel',
     Chat = 'Chat',
     Command = 'Command',
@@ -34,10 +38,98 @@ export enum VariableCategory {
     ExtraLife = 'Extra Life',
     Bits = 'Bits',
     Rank = 'Rank',
-    Other = 'Other'
+    COMMON = "Common",
+    TRIGGER = "Trigger Based",
+    NUMBERS = "Numbers",
+    ADVANCED = "Advanced"
 }
 
-export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
+export let FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {};
+
+let variableData: { [key: string]: VariableDefinition } = {};
+async function getVariableData() {
+    const url = "http://localhost:7472/api/v1/variables";
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
+        const data = await response.json(); // Parse response as JSON
+        return data;
+    } catch (error: any) {
+        console.error(error.message);
+        return null;
+    }
+}
+
+function toTitleCase(str: string) {
+    return str.replace(
+        /\w\S*/g,
+        text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
+    );
+}
+
+function arrayToObject(array: any[]) {
+    return array.reduce((acc, item) => {
+        if (item.definition && item.definition.handle) {
+            if (item.definition.description.toLowerCase().includes("deprecated")) {
+                item.definition.deprecatedMessage = item.definition.description.match(/(?<value>(?<=\().*?(?=\)))/g)[0];
+                item.definition.deprecated = item.definition.hidden
+                item.definition.replacedBy = item.definition.deprecatedMessage.replace("Deprecated: use ", "");
+            }
+            if (item.definition.categories != null) {
+                item.definition.category = toTitleCase(item.definition.categories.join(', ').toUpperCase());
+            }
+            if (item.definition.usage != null || item.definition.examples != null) {
+                item.definition.acceptsOptionalArguments = true;
+            }
+            if (String(item.definition.usage).includes("default")){
+                item.definition.requiresDefault = true;
+            }
+            if (item.definition.examples != null) {
+                for (let index = 0; index < item.definition.examples.length; index++) {
+                    const element = item.definition.examples[index];
+                    element.example = `$${element.usage}`
+                    const description = element.description
+                    delete element.description
+                    delete element.usage
+                    element.description = description
+                    item.definition.examples[index] = element
+                }
+            }
+
+            item.acceptsNesting = true;
+            if (item.definition.handle === "$name") {
+                item.definition.handle = "$"
+            }
+            if (item.definition.handle === "&name") {
+                item.definition.handle = "&"
+            }
+            item.definition.name = `$${item.definition.handle}`;
+            item.name = item.handle;
+            acc[`$${item.definition.handle}`] = item.definition;
+        }
+        return acc;
+    }, {});
+}
+
+async function assignToGlobal() {
+    const data: any = await getVariableData();
+    if (data) {
+        variableData = arrayToObject(data);
+        const configuration = workspace.getConfiguration("firebotHelper");
+        configuration.update("variableData", variableData, ConfigurationTarget.Global).then(() => {
+            // take action here
+            console.log("set config")
+        });
+        //vscode.ConfigurationTarget.Global("variableData",true) = variableData;
+    }
+}
+
+const internalVariables: { [key: string]: VariableDefinition } = vscode.workspace.getConfiguration('variableData')
+const IV: { [key: string]: VariableDefinition } =
+{
+
     '$$': {
         name: '$$',
         description: 'Retrieves the value for a customVariable. If path is specified, walks the item before returning the value',
@@ -831,7 +923,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$convertFromJSON': {
         name: '$convertFromJSON',
         description: 'Converts JSON text into a raw object instance',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$convertFromJSON[\'{"name": "John", "age": 30}\']',
@@ -842,7 +934,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$convertToJSON': {
         name: '$convertToJSON',
         description: 'Converts a raw value into JSON text',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$convertToJSON[rawValue, true]',
@@ -858,7 +950,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$counter': {
         name: '$counter',
         description: 'Displays the value of the given counter.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$counter[name]',
@@ -869,7 +961,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$currency': {
         name: '$currency',
         description: 'How much of the given currency the given user has.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$currency[currencyName]',
@@ -884,7 +976,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$currencyRank': {
         name: '$currencyRank',
         description: 'Returns the rank of the given user based on how much of the given currency they have.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$currencyRank[currencyName]',
@@ -1117,7 +1209,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$evalJs': {
         name: '$evalJs',
         description: 'Evaluates the given js in a sandboxed browser instance.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$evalJs[``return parameters[0]``, test]',
@@ -1136,7 +1228,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$evalVars': {
         name: '$evalVars',
         description: 'Evaluate $variables in a string of text. Useful for evaluating text $vars from an external source (ie a txt file or API)',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$extraLifeDonations': {
         name: '$extraLifeDonations',
@@ -1438,12 +1530,12 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$loopCount': {
         name: '$loopCount',
         description: '0 based count for the current loop iteration inside of a Loop Effects effect',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$loopItem': {
         name: '$loopItem',
         description: 'The item for current loop iteration inside of a Loop Effects effect using Array loop mode',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$lowercase': {
         name: '$lowercase',
@@ -1505,7 +1597,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$objectWalkPath': {
         name: '$objectWalkPath',
         description: 'Returns the value from an object at the given dot-notated path',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$objectWalkPath[object, path.to.property]',
@@ -1652,7 +1744,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$profilePageBytebinToken': {
         name: '$profilePageBytebinToken',
         description: 'Get bytebin id for streamer profile. Access the json by going to https://bytebin.lucko.me/ID-HERE.',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$pronouns': {
         name: '$pronouns',
@@ -1677,7 +1769,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$quickStore': {
         name: '$quickStore',
         description: 'Retrieves or stores a value until the expression has finished evaluation',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$quickStore[name, value]',
@@ -1692,7 +1784,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$quote': {
         name: '$quote',
         description: 'Get a random quote',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         acceptsOptionalArguments: true,
         examples: [
             {
@@ -1708,7 +1800,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$quoteAsObject': {
         name: '$quoteAsObject',
         description: 'Get a random quote in the form of a JSON Object.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$quoteAsObject[#]',
@@ -1743,7 +1835,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$randomAdvice': {
         name: '$randomAdvice',
         description: 'Get some random advice!',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$randomCustomRoleUser': {
         name: '$randomCustomRoleUser',
@@ -1759,7 +1851,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$randomDadJoke': {
         name: '$randomDadJoke',
         description: 'Get a random dad joke!',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$randomNumber': {
         name: '$randomNumber',
@@ -1779,7 +1871,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$randomRedditImage': {
         name: '$randomRedditImage',
         description: 'Get a random image from a subreddit. (We do our best to check for bad images, but content warning none the less.)',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$randomRedditImage[aww]',
@@ -1790,7 +1882,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$randomUUID': {
         name: '$randomUUID',
         description: 'Returns a random formated UUID eg 00000000-0000-0000-0000-000000000000',
-        category: VariableCategory.Other
+        category: VariableCategory.COMMON
     },
     '$randomViewer': {
         name: '$randomViewer',
@@ -1919,7 +2011,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$rawQuoteAsObject': {
         name: '$rawQuoteAsObject',
         description: 'Get a random quote in the form of a raw Object.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         deprecated: true,
         deprecatedMessage: 'Use $quoteAsObject instead',
         replacedBy: '$quoteAsObject',
@@ -1974,7 +2066,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$rawTopCurrency': {
         name: '$rawTopCurrency',
         description: 'Returns a raw array containing those with the most of the specified currency. Items in the array contain \'place\', \'username\' and \'amount\' properties',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         deprecated: true,
         deprecatedMessage: 'Use $topCurrency instead',
         replacedBy: '$topCurrency',
@@ -1992,7 +2084,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$rawTopMetadata': {
         name: '$rawTopMetadata',
         description: 'Returns a raw array of users with the most of a given metadata key. Items contain \'username\', \'place\' and \'amount\' properties',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         deprecated: true,
         deprecatedMessage: 'Use $topMetadata instead',
         replacedBy: '$topMetadata',
@@ -2074,7 +2166,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$readApi': {
         name: '$readApi',
         description: 'Calls the given URL and returns the response as a string.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$readApi[url, object.path.here]',
@@ -2201,7 +2293,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$rollDice': {
         name: '$rollDice',
         description: 'Rolls some dice based on the provided config, ie 2d6 or 2d10+1d12 or 1d10+3',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$rollDice[1d6]',
@@ -2232,7 +2324,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$runEffect': {
         name: '$runEffect',
         description: 'Run an effect defined as json. Outputs an empty string. Please keep in mind that the power and flexibility afforded by this variable means it is very error prone. Only use if you know what you are doing.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$runEffect[``{"type":"firebot:chat","message":"Hello world"}``]',
@@ -2259,7 +2351,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$setObjectProperty': {
         name: '$setObjectProperty',
         description: 'Adds or updates a property\'s value in the given JSON object. For nested properties, you can use dot notation (e.g. some.property). Set value to null to remove property.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$setObjectProperty[{"name": "John"}, age, 25]',
@@ -2441,7 +2533,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$topCurrency': {
         name: '$topCurrency',
         description: 'Comma separated list of users with the most of the given currency. Defaults to top 10, you can provide a custom number as a second argument.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$topCurrency[Points]',
@@ -2457,7 +2549,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$topCurrencyUser': {
         name: '$topCurrencyUser',
         description: 'Get the username or amount for a specific position in the top currency',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$topCurrencyUser[Points, 1, username]',
@@ -2473,7 +2565,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$topMetadata': {
         name: '$topMetadata',
         description: 'Comma separated list of users with the most of the given metadata key. Defaults to top 10, you can provide a custom number as a second argument.',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$topMetadata[deaths]',
@@ -2489,7 +2581,7 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
     '$topMetadataUser': {
         name: '$topMetadataUser',
         description: 'Get the username or amount for a specific position in the top metadata list',
-        category: VariableCategory.Other,
+        category: VariableCategory.COMMON,
         examples: [
             {
                 example: '$topMetadataUser[slaps, 1, username]',
@@ -2833,6 +2925,44 @@ export const FIREBOT_VARIABLES: { [key: string]: VariableDefinition } = {
         ]
     }
 };
+function compareObjectArrays(obj1: any, obj2: any) {
+    let obj1string = JSON.stringify(obj1);
+    let obj2string = JSON.stringify(obj2);
+    //console.log(obj1string)
+    //console.log(obj2string)
+    //console.log(obj1string === obj2string)
+    return obj1string === obj2string;
+}
+(async () => {
+    await assignToGlobal();
+    console.log(variableData); // Ensures `variableData` is logged after assignment
+    FIREBOT_VARIABLES = variableData ? variableData : internalVariables
+    let items: any[] = [];
+    Object.entries(FIREBOT_VARIABLES).forEach(([varName, varInfo]) => {
+        Object.entries(internalVariables).forEach(([iVarName, iVarInfo]) => {
+            if (varName == iVarName) {
+                if (!compareObjectArrays(varInfo.examples, iVarInfo.examples)) {
+
+                    // console.log(varName)
+                    // console.log(iVarInfo.examples)
+                    // console.log(varInfo.examples)
+                    //console.log(iVarInfo)
+                    let iExamples = iVarInfo.examples
+                    let eExamples = varInfo.examples
+                    const item = { varName, iExamples, eExamples };
+                    items.push(item);
+                }
+            }
+        });
+    });
+
+    const data = new Uint8Array(Buffer.from(JSON.stringify(items, null, 4)));
+    writeFile("c:\\temp\\firebotvardump.txt", data, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+    });
+    //console.log(items);
+})();
 
 // Export useful groupings of variables
 export const NESTABLE_VARIABLES = Object.keys(FIREBOT_VARIABLES).filter(
