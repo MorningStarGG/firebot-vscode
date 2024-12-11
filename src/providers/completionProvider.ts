@@ -4,7 +4,6 @@ import { FIREBOT_VARIABLES, VariableCategory, VariableDefinition } from '../vari
 interface FirebotCompletionContext {
     isNested: boolean;
     inMath: boolean;
-    inFilePath: boolean;
     inRegex: boolean;
     inStyle: boolean;
     parentVariable?: string;
@@ -12,115 +11,115 @@ interface FirebotCompletionContext {
 }
 
 export class FirebotCompletionProvider implements vscode.CompletionItemProvider {
-    public static readonly FILE_PATH_VARIABLES = [
-        '$readFile',
-        '$fileExists',
-        '$filesInDirectory',
-        '$audioDuration',
-        '$videoDuration'
-    ];
+    // public static FILE_PATH_VARIABLES = [
+    //     '$readFile',
+    //     '$fileExists',
+    //     '$filesInDirectory',
+    //     '$audioDuration',
+    //     '$videoDuration'
+    // ];
 
-    public static readonly MATH_VARIABLES = [
-        '$math',
-        '$floor',
-        '$ceil',
-        '$round',
-        '$ensureNumber',
-        '$min',
-        '$max',
-        '$padNumber',
-        '$randomNumber',
-        '$bitsCheered',
-        '$effectQueueLength'
-    ];
+    // public static MATH_VARIABLES = [
+    //     '$math',
+    //     '$floor',
+    //     '$ceil',
+    //     '$round',
+    //     '$ensureNumber',
+    //     '$min',
+    //     '$max',
+    //     '$padNumber',
+    //     '$randomNumber',
+    //     '$bitsCheered',
+    //     '$effectQueueLength'
+    // ];
+    // public static NON_BRACKET_VARS = [
+    //     // Boolean States
+    //     '$true', '$false', '$null', '$isWhisper', '$isAdBreakRunning',
 
-    public static readonly NON_BRACKET_VARS = [
-        // Boolean States
-        '$true', '$false', '$null', '$isWhisper', '$isAdBreakRunning',
+    //     // Core User Variables
+    //     '$user', '$username', '$target', '$bot', '$streamer', '$pronouns',
 
-        // Core User Variables
-        '$user', '$username', '$target', '$bot', '$streamer', '$pronouns',
+    //     // Command Related
+    //     '$commandTrigger', '$count', '$argArray', '$argCount',
 
-        // Command Related
-        '$commandTrigger', '$count', '$argArray', '$argCount',
+    //     // Chat Message Info
+    //     '$chatMessage', '$chatMessageId', '$chatMessageTextOnly', '$chatUserColor', '$accountCreationDate', '$chatMessages', '$activeChatUserCount', '$userBadgeUrls',
 
-        // Chat Message Info
-        '$chatMessage', '$chatMessageId', '$chatMessageTextOnly', '$chatUserColor', '$accountCreationDate', '$chatMessages', '$activeChatUserCount', '$userBadgeUrls',
+    //     // Stream Info
+    //     '$category', '$game', '$uptime', '$streamTitle', '$currentViewerCount', '$followCount', '$subCount', '$subPoints', '$viewTime',
 
-        // Stream Info
-        '$category', '$game', '$uptime', '$streamTitle', '$currentViewerCount', '$followCount', '$subCount', '$subPoints', '$viewTime',
+    //     // User Info & Bio
+    //     '$userAvatarUrl', '$userProfileImageUrl', '$userBio', '$followAge', '$categoryImageUrl',
 
-        // User Info & Bio
-        '$userAvatarUrl', '$userProfileImageUrl', '$userBio', '$followAge', '$categoryImageUrl',
+    //     // Charity
+    //     '$charityCampaignGoal', '$charityCampaignTotal',
 
-        // Charity
-        '$charityCampaignGoal', '$charityCampaignTotal',
+    //     // Extra Life Info
+    //     '$extraLifeInfo', '$extraLifeDonations', '$extraLifeIncentives', '$extraLifeMilestones',
 
-        // Extra Life Info
-        '$extraLifeInfo', '$extraLifeDonations', '$extraLifeIncentives', '$extraLifeMilestones',
+    //     // OBS Status & Info
+    //     '$obsIsConnected', '$obsInputActive', '$obsInputShowing', '$obsInputMuted', '$obsIsRecording', '$obsIsStreaming', '$obsSceneCollectionName', '$obsSceneName', '$obsInputName', '$obsInputKind', '$obsInputUuid', '$obsOldInputName', '$obsInputSettings', '$obsInputAudioTracks', '$obsInputVolumeDb', '$obsInputVolumeMultiplier', '$obsInputAudioBalance', '$obsInputAudioSyncOffset', '$obsInputMonitorType',
 
-        // OBS Status & Info
-        '$obsIsConnected', '$obsInputActive', '$obsInputShowing', '$obsInputMuted', '$obsIsRecording', '$obsIsStreaming', '$obsSceneCollectionName', '$obsSceneName', '$obsInputName', '$obsInputKind', '$obsInputUuid', '$obsOldInputName', '$obsInputSettings', '$obsInputAudioTracks', '$obsInputVolumeDb', '$obsInputVolumeMultiplier', '$obsInputAudioBalance', '$obsInputAudioSyncOffset', '$obsInputMonitorType',
+    //     // Timing Info
+    //     '$secondsUntilNextAdBreak', 
 
-        // Timing Info
-        '$secondsUntilNextAdBreak', '$time', '$date',
+    //     // Loop Info
+    //     '$loopCount', '$loopItem',
 
-        // Loop Info
-        '$loopCount', '$loopItem',
+    //     // Channel Goals
+    //     '$channelGoalCurrentAmount', '$channelGoalDescription', '$channelGoalTargetAmount', '$rewardCost', '$rewardDescription', '$rewardImageUrl',
 
-        // Channel Goals
-        '$channelGoalCurrentAmount', '$channelGoalDescription', '$channelGoalTargetAmount', '$rewardCost', '$rewardDescription', '$rewardImageUrl',
+    //     // Cheermote/Emote Info
+    //     '$cheermoteAmounts', '$cheermoteNames', '$cheermoteUrls', '$cheermoteColors', '$cheermoteAnimatedUrls', '$chatMessageAnimatedEmoteUrls', '$chatMessageEmoteNames', '$chatMessageEmoteUrls',
 
-        // Cheermote/Emote Info
-        '$cheermoteAmounts', '$cheermoteNames', '$cheermoteUrls', '$cheermoteColors', '$cheermoteAnimatedUrls', '$chatMessageAnimatedEmoteUrls', '$chatMessageEmoteNames', '$chatMessageEmoteUrls',
+    //     // Profile/Account Info
+    //     '$profilePageBytebinToken',
 
-        // Profile/Account Info
-        '$profilePageBytebinToken',
+    //     // Others
+    //     '$quote', '$quoteAsObject',
 
-        // Others
-        '$quote', '$quoteAsObject',
+    //     // Random Values
+    //     '$randomUUID', '$randomAdvice', '$randomDadJoke', '$randomViewer', '$randomActiveViewer',
 
-        // Random Values
-        '$randomUUID', '$randomAdvice', '$randomDadJoke', '$randomViewer', '$randomActiveViewer',
+    //     // Arrays
+    //     '$subNames', '$usernameArray', '$topBitsCheerers'
+    // ];
 
-        // Arrays
-        '$subNames', '$usernameArray', '$topBitsCheerers'
-    ];
+    // public static REQUIRES_BRACKETS = [
+    //     // Array Operations
+    //     '$rawTopCurrency', '$rawTopMetadata', '$rawTopViewTime', '$arrayAdd', '$arrayElement', '$arrayFilter', '$arrayFindIndex', '$arrayFindWithNull', '$arrayJoin', '$arrayLength', '$arrayRandomItem', '$arrayRemove', '$arrayReverse', '$arrayShuffle', '$arrayFrom',
 
-    public static readonly REQUIRES_BRACKETS = [
-        // Array Operations
-        '$rawTopCurrency', '$rawTopMetadata', '$rawTopViewTime', '$arrayAdd', '$arrayElement', '$arrayFilter', '$arrayFindIndex', '$arrayFindWithNull', '$arrayJoin', '$arrayLength', '$arrayRandomItem', '$arrayRemove', '$arrayReverse', '$arrayShuffle', '$arrayFrom',
+    //     // User Data
+    //     '$customRoleUsers', '$userIsTimedOut', '$userIsBanned', '$userId', '$userDisplayName', '$userExists', '$rawRandomCustomRoleUser', '$customRoleUserCount', '$isUserInChat', '$viewerNextRank', '$viewerRank', '$viewerNamesInRank', '$topMetadata', '$topMetadataUser', '$topViewTime', '$userRoles', '$rankLadderMode', '$rankValue', '$rankValueDescription', '$bitsLeaderboard', '$userMetadata', '$viewersInRankArray',
 
-        // User Data
-        '$customRoleUsers', '$userIsTimedOut', '$userIsBanned', '$userId', '$userDisplayName', '$userExists', '$rawRandomCustomRoleUser', '$customRoleUserCount', '$isUserInChat', '$viewerNextRank', '$viewerRank', '$viewerNamesInRank', '$topMetadata', '$topMetadataUser', '$topViewTime', '$userRoles', '$rankLadderMode', '$rankValue', '$rankValueDescription', '$bitsLeaderboard', '$userMetadata', '$viewersInRankArray',
+    //     // Math, Numbers & User Data
+    //     '$ensureNumber', '$effectQueueLength', '$ceil', '$floor', '$round', '$math', '$commafy', '$max', '$min', '$padNumber', '$topCurrency', 'topCurrencyUser', '$currency', '$currencyRank',
 
-        // Math, Numbers & User Data
-        '$ensureNumber', '$effectQueueLength', '$ceil', '$floor', '$round', '$math', '$commafy', '$max', '$min', '$padNumber', '$topCurrency', 'topCurrencyUser', '$currency', '$currencyRank',
+    //     // Logic Operations
+    //     '$if', '$ALL', '$AND', '$ANY', '$NOT', '$NALL', '$NAND', '$NANY', '$NOR', '$OR', '$hasRole', '$hasRoles', '$viewerHasRank',
 
-        // Logic Operations
-        '$if', '$ALL', '$AND', '$ANY', '$NOT', '$NALL', '$NAND', '$NANY', '$NOR', '$OR', '$hasRole', '$hasRoles', '$viewerHasRank',
+    //     // Text Operations
+    //     '$replace', '$textContains', '$textLength', '$textPadEnd', '$textPadStart', '$textSubstring', '$word', '$concat', '$capitalize', '$lowercase', '$uppercase', '$trim', '$trimStart', '$trimEnd', '$scrambleText', '$ordinalIndicator', '$encodeForHtml', '$decodeFromHtml', '$encodeForUrl', '$decodeFromUrl',
 
-        // Text Operations
-        '$replace', '$textContains', '$textLength', '$textPadEnd', '$textPadStart', '$textSubstring', '$word', '$concat', '$capitalize', '$lowercase', '$uppercase', '$trim', '$trimStart', '$trimEnd', '$scrambleText', '$ordinalIndicator', '$encodeForHtml', '$decodeFromHtml', '$encodeForUrl', '$decodeFromUrl',
+    //     // File Operations
+    //     '$readFile', '$fileExists', '$filesInDirectory', '$audioDuration', '$videoDuration', '$fileLineCount',
 
-        // File Operations
-        '$readFile', '$fileExists', '$filesInDirectory', '$audioDuration', '$videoDuration', '$fileLineCount',
+    //     // Date & Time
+    //     '$discordTimestamp', '$unixTimestamp', '$time', '$date',
 
-        // Date & Time
-        '$discordTimestamp', '$unixTimestamp',
+    //     // OBS
+    //     '$obsColorValue',
 
-        // OBS
-        '$obsColorValue',
+    //     // Custom Variables & Effects
+    //     '$customVariable', '$customVariableKeys', '$effectOutput', '$evalJs', '$evalVars', '$runEffect', '$quickStore', '$counter',
 
-        // Custom Variables & Effects
-        '$customVariable', '$customVariableKeys', '$effectOutput', '$evalJs', '$evalVars', '$runEffect', '$quickStore', '$counter',
+    //     // Random Generation
+    //     '$randomNumber', '$randomRedditImage', '$rollDice', '$randomCustomRoleUser',
 
-        // Random Generation
-        '$randomNumber', '$randomRedditImage', '$rollDice', '$randomCustomRoleUser',
+    //     // API & JSON
+    //     '$convertFromJSON', '$convertToJSON', '$twitchChannelUrl', '$readApi', '$objectWalkPath', '$setObjectProperty', '$splitText', '$regexExec', '$regexTest', '$regexMatches'
+    // ];
 
-        // API & JSON
-        '$convertFromJSON', '$convertToJSON', '$twitchChannelUrl', '$readApi', '$objectWalkPath', '$setObjectProperty', '$splitText', '$regexExec', '$regexTest', '$regexMatches'
-    ];
     public provideCompletionItems(
         document: vscode.TextDocument,
         position: vscode.Position,
@@ -143,6 +142,7 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
         }
 
         items.push(...this.getContextSnippets(completionContext));
+        //console.log(items)
         return items;
     }
 
@@ -153,7 +153,8 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
 
         const varName = match[0];
         const varInfo = FIREBOT_VARIABLES[varName];
-        return varInfo && this.shouldHaveBrackets(varName, varInfo);
+        let shouldHaveBrackets = varInfo.acceptsOptionalArguments ? varInfo.acceptsOptionalArguments : false;
+        return varInfo && shouldHaveBrackets;
     }
 
     private analyzeContext(
@@ -163,11 +164,11 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
     ): FirebotCompletionContext {
         const isNested = /\$[a-zA-Z_$&]+\[[^\]]*$/.test(linePrefix);
         const inMath = /\$math\[[^\]]*$/.test(linePrefix);
-        const inFilePath = FirebotCompletionProvider.FILE_PATH_VARIABLES.some(v => linePrefix.includes(v));
         const inRegex = linePrefix.includes('$replace') || linePrefix.includes('$regexTest');
-        const inStyle = document.languageId === 'css' ||
-            (document.languageId === 'html' && this.isInStyleTag(document, position)) ||
-            /style=["']|{|\$|:/.test(linePrefix);
+        const inStyle = (document.languageId === 'css' ||
+            (document.languageId === 'html') &&
+            (this.isInStyleTag(document, position)) ||
+            /style=["']|{|\$|:/.test(linePrefix));
 
         // Find parent variable if nested
         let parentVariable: string | undefined;
@@ -181,7 +182,6 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
         return {
             isNested,
             inMath,
-            inFilePath,
             inRegex,
             inStyle,
             parentVariable,
@@ -197,46 +197,56 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
         return styleStart !== -1 && (styleEnd === -1 || offset < styleEnd);
     }
 
-    private shouldIncludeVariable(varName: string, varInfo: VariableDefinition, context: FirebotCompletionContext): boolean {
-        // Show all variables by default
-        if (!context.inMath && !context.inFilePath && !context.inStyle) {
-            return true;
-        }
+    // private shouldIncludeVariable(varName: string, varInfo: VariableDefinition, context: FirebotCompletionContext): boolean {
+    //     if (varInfo.category == VariableCategory.NUMBERS) {
+    //         return FirebotCompletionProvider.MATH_VARIABLES.includes(varName);
+    //     }
+    //     // Show all variables by default
+    //     if (!context.inMath && !context.inFilePath && !context.inStyle) {
+    //         return true;
+    //     }
 
-        // Special context handling
-        if (context.inMath) {
-            return FirebotCompletionProvider.MATH_VARIABLES.includes(varName);
-        }
+    //     // Special context handling
+    //     if (context.inMath) {
+    //         return FirebotCompletionProvider.MATH_VARIABLES.includes(varName);
+    //     }
 
-        if (context.inFilePath) {
-            return true; // Show all variables in file paths
-        }
+    //     if (context.inFilePath) {
+    //         return true; // Show all variables in file paths
+    //     }
 
-        if (context.inStyle) {
-            return true; // Show all variables in CSS/style contexts
-        }
+    //     if (context.inStyle) {
+    //         return true; // Show all variables in CSS/style contexts
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
-    private shouldHaveBrackets(varName: string, varInfo: VariableDefinition): boolean {
-        if (FirebotCompletionProvider.NON_BRACKET_VARS.includes(varName)) {
-            return false;
-        }
+    // private shouldHaveBrackets(varName: string, varInfo: VariableDefinition): boolean {
 
-        if (FirebotCompletionProvider.REQUIRES_BRACKETS.includes(varName)) {
-            return true;
-        }
+    //     if (varInfo.acceptsOptionalArguments && !FirebotCompletionProvider.REQUIRES_BRACKETS.includes(varName)) {
 
-        // For any other variables, check their examples
-        return varInfo.examples?.some(ex => ex.example.includes('[')) ?? false;
-    }
+    //         FirebotCompletionProvider.REQUIRES_BRACKETS.push(varName)
+    //     }
+    //     //console.log(varName)
+    //     if (FirebotCompletionProvider.NON_BRACKET_VARS.includes(varName)) {
+    //         return false;
+    //     }
+
+    //     if (FirebotCompletionProvider.REQUIRES_BRACKETS.includes(varName)) {
+    //         return true;
+    //     }
+
+    //     // For any other variables, check their examples
+    //     return varInfo.examples?.some(ex => ex.example.includes('[')) ?? false;
+    // }
     private createCompletionItem(
         varName: string,
         varInfo: VariableDefinition,
         context: FirebotCompletionContext,
         position: vscode.Position
     ): vscode.CompletionItem {
+        //console.log("we are in the create item function")
         const item = new vscode.CompletionItem(varName, vscode.CompletionItemKind.Variable);
 
         // Add documentation
@@ -249,7 +259,7 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
                 docs.appendMarkdown(`\n- \`${example.example}\`: ${example.description}`);
             });
         }
-
+        //console.log(docs)
         if (varInfo.deprecated) {
             docs.appendMarkdown(`\n\n⚠️ **Deprecated**: Use \`${varInfo.replacedBy}\` instead.`);
             item.tags = [vscode.CompletionItemTag.Deprecated];
@@ -261,18 +271,16 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
         const escapedVarName = varName.replace(/\$/g, '\\$');
 
         // Check if this variable can have optional arguments
-        if (this.canHaveOptionalArguments(varName, varInfo)) {
+        if (varInfo.acceptsOptionalArguments) {
             // Insert the variable with optional brackets and placeholders
-            item.insertText = new vscode.SnippetString(`${escapedVarName}\${1:[$2]}\$0`);
-        } else if (!this.shouldHaveBrackets(varName, varInfo)) {
-            item.insertText = varName;
-        } else {
             // Insert the complete text with brackets as one snippet
             if (varInfo.requiresDefault) {
                 item.insertText = new vscode.SnippetString(`${escapedVarName}[\${1:value}, \${2:default}]`);
             } else {
-                item.insertText = new vscode.SnippetString(`${escapedVarName}[\${1:value}]`);
+                item.insertText = new vscode.SnippetString(`${escapedVarName}\${1:[$2]}\$0`);
             }
+        } else {
+            item.insertText = varName;
         }
 
         return item;
@@ -323,39 +331,6 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
         return items;
     }
 
-    private getContextSnippets(context: FirebotCompletionContext): vscode.CompletionItem[] {
-        const snippets: vscode.CompletionItem[] = [];
-
-        if (context.inMath) {
-            snippets.push(this.createSnippetCompletion(
-                'Math Addition',
-                'math-add',
-                '$math[${1:value1} + ${2:value2}]',
-                'Add two values'
-            ));
-        }
-
-        if (context.inFilePath) {
-            snippets.push(this.createSnippetCompletion(
-                'Date-based Filename',
-                'date-filename',
-                '$time[YYYY-MM-DD].txt',
-                'Create a filename with current date'
-            ));
-        }
-
-        if (context.inStyle) {
-            snippets.push(this.createSnippetCompletion(
-                'Dynamic Width',
-                'css-width',
-                'width: $ensureNumber[${1:value}, ${2:default}]',
-                'Set width with fallback value'
-            ));
-        }
-
-        return snippets;
-    }
-
     private createSnippetCompletion(
         label: string,
         _kind: string,
@@ -366,6 +341,42 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
         item.insertText = new vscode.SnippetString(snippet);
         item.documentation = new vscode.MarkdownString(documentation);
         return item;
+    }
+
+    private getContextSnippets(context: FirebotCompletionContext): vscode.CompletionItem[] {
+        const snippets: vscode.CompletionItem[] = [];
+        snippets.push(this.createSnippetCompletion(
+            'Math Addition',
+            'math-add',
+            '\\$math[${1:value1} + ${2:value2}]',
+            'Add two values'
+        ));
+        if (context.isNested) {
+            snippets.push(this.createSnippetCompletion(
+                'Date-based Filename',
+                'date-filename',
+                '\\$time[YYYY-MM-DD_hh-mm-ss].txt',
+                'Create a filename with current date'
+            ));
+        }
+        if (context.inStyle) {
+            snippets.push(this.createSnippetCompletion(
+                'Dynamic Width',
+                'css-width',
+                'width: \\$ensureNumber[${1:value}, ${2:default}]',
+                'Set width with fallback value'
+            ));
+        }
+        if (context.inStyle) {
+            snippets.push(this.createSnippetCompletion(
+                'Dynamic height',
+                'css-height',
+                'height: \\$ensureNumber[${1:value}, ${2:default}]',
+                'Set height with fallback value'
+            ));
+        }
+
+        return snippets;
     }
 
     private getCSSSnippet(varName: string, varInfo: VariableDefinition): string {
@@ -384,14 +395,20 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
             this.createSnippetCompletion(
                 'Basic Math',
                 'basic-math',
-                '$math[${1:value1} + ${2:value2}]', // Prepend `$math` to the snippet
+                '${1:value1} + ${2:value2}', // Prepend `$math` to the snippet
                 'Basic addition'
             ),
             this.createSnippetCompletion(
                 'Complex Math',
                 'complex-math',
-                '$math[${1:value1} * ${2:value2} + ${3:value3}]', // Prepend `$math`
+                '${1:value1} * ${2:value2} + ${3:value3}', // Prepend `$math`
                 'Complex calculation'
+            ),
+            this.createSnippetCompletion(
+                'Advanced Math',
+                'Advanced-math',
+                '``minval=${1:10}; maxval=${2:1000}; amount = ${3:value3}; offset = minval / 100; (min(amount,maxval) / maxval * (1 - offset) + offset) * 10``',
+                'Advanced calculation'
             )
         ];
     }
@@ -401,13 +418,13 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
             this.createSnippetCompletion(
                 'Array Index',
                 'array-index',
-                '$customVariable[${1:variableName}, ${2:index}]', // Prepend `$customVariable`
+                '${1:variableName}, ${2:index}', // Prepend `$customVariable`
                 'Access array element'
             ),
             this.createSnippetCompletion(
                 'Object Path',
                 'object-path',
-                '$customVariable[${1:variableName}, ${2:path.to.property}]', // Prepend `$customVariable`
+                '${1:variableName}, ${2:path.to.property}', // Prepend `$customVariable`
                 'Access nested property'
             )
         ];
@@ -418,7 +435,7 @@ export class FirebotCompletionProvider implements vscode.CompletionItemProvider 
             this.createSnippetCompletion(
                 'Preset Value',
                 'preset-value',
-                '$presetListArg[${1:presetName}]', // Prepend `$presetListArg`
+                '${1:presetName}', // Prepend `$presetListArg`
                 'Get preset argument value'
             )
         ];
